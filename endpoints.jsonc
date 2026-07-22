@@ -1,0 +1,13 @@
+{
+  // pump.fun program
+  "program": "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P",
+  "windows": { "warmupSec": 5, "cooldownSec": 3, "finalizeMs": 4000 },
+  "endpoints": [
+    // Two ws-logs providers on the same program = a real head-to-head.
+    { "name": "helius-free", "kind": "ws-logs", "url": "wss://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}" },
+    { "name": "provider-b",  "kind": "ws-logs", "url": "wss://<second-provider>/..." }
+    // Optional, ranked independently in their own namespaces:
+    // { "name": "helius-slot", "kind": "ws-slots", "url": "wss://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}" }
+    // { "name": "geyser-x",    "kind": "grpc",      "url": "https://<paid-geyser>:443", "xToken": "${GEYSER_TOKEN}" }
+  ]
+}
