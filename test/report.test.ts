@@ -21,6 +21,38 @@ test("toCsv: header + one row per provider", () => {
   expect(lines[0]).toContain("name,kind,samples,wins,winRate");
   expect(lines).toHaveLength(3);
   expect(lines[1]).toContain("slow");
+  // --absolute off (no provider has freshnessMs): conditional column stays absent -> byte-identical.
+  expect(lines[0]).not.toContain("freshnessMs");
+});
+
+test("toCsv includes freshnessMs column + value when a provider carries it, empty field otherwise", () => {
+  const withFreshness: Report = {
+    ...R,
+    providers: [
+      { ...R.providers[0] },                      // "slow": no freshnessMs
+      { ...R.providers[1], freshnessMs: 500 },    // "fast": freshnessMs = 500
+    ],
+  };
+  const csv = toCsv(withFreshness);
+  const lines = csv.trim().split("\n");
+  expect(lines[0]).toContain("freshnessMs");
+  const fastRow = lines.find((l) => l.startsWith("fast,"))!;
+  expect(fastRow.split(",").pop()).toBe("500");
+  const slowRow = lines.find((l) => l.startsWith("slow,"))!;
+  expect(slowRow.endsWith(",")).toBe(true);
+});
+
+test("formatConsole shows the absolute-freshness disclaimer and value when present", () => {
+  const withFreshness: Report = {
+    ...R,
+    providers: [
+      { ...R.providers[0] },
+      { ...R.providers[1], freshnessMs: 500 },
+    ],
+  };
+  const out = formatConsole(withFreshness);
+  expect(out).toContain("absolute freshness");
+  expect(out).toContain("500");
 });
 
 test("toJson round-trips", () => {

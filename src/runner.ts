@@ -66,6 +66,7 @@ export async function runBench(
   const timer = setInterval(() => {
     for (const m of matcher.finalizeOlderThan(process.hrtime.bigint())) {
       stats.addMatch(m);
+      // Buffered here (not sampled inline) so this synchronous 1s tick never awaits; retained only when --absolute is on.
       if (sampler) finalizedForFreshness.push(m);
     }
   }, 1000);
