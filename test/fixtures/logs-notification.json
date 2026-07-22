@@ -1,0 +1,15 @@
+{
+  "jsonrpc": "2.0",
+  "method": "logsNotification",
+  "params": {
+    "result": {
+      "context": { "slot": 312345678 },
+      "value": {
+        "signature": "5xyzSignatureBase58Example11111111111111111111111111111111111111111111111111111111",
+        "err": null,
+        "logs": ["Program 6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P invoke [1]"]
+      }
+    },
+    "subscription": 24040
+  }
+}
