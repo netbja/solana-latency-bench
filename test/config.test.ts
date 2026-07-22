@@ -31,3 +31,15 @@ test("rejects duplicate endpoint names", () => {
   const dup = `{ "program":"6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P","windows":{"warmupSec":0,"cooldownSec":0,"finalizeMs":1},"endpoints":[{"name":"x","kind":"ws-logs","url":"u"},{"name":"x","kind":"ws-slots","url":"u2"}]}`;
   expect(() => parseConfig(dup, {} as any)).toThrow(/duplicate/);
 });
+
+test("resolves a config program alias to its pubkey", () => {
+  const aliased = `{ "program":"pump.fun","windows":{"warmupSec":5,"cooldownSec":3,"finalizeMs":4000},"endpoints":[{"name":"a","kind":"ws-logs","url":"u"}]}`;
+  const cfg = parseConfig(aliased, {} as any);
+  expect(cfg.program).toBe("6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P");
+  expect(cfg.program.length).toBe(43);
+});
+
+test("throws on a too-short non-alias program", () => {
+  const bad = `{ "program":"xyz","windows":{"warmupSec":0,"cooldownSec":0,"finalizeMs":1},"endpoints":[{"name":"a","kind":"ws-logs","url":"u"}]}`;
+  expect(() => parseConfig(bad, {} as any)).toThrow(/alias or a base58 pubkey/);
+});

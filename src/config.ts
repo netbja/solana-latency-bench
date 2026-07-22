@@ -2,6 +2,7 @@ import { z } from "zod";
 import { parse as parseJsonc, ParseError } from "jsonc-parser";
 import { readFileSync } from "node:fs";
 import type { BenchConfig } from "./types";
+import { resolveProgram } from "./programs";
 
 const endpointSchema = z.object({
   name: z.string().min(1),
@@ -12,7 +13,7 @@ const endpointSchema = z.object({
 
 const configSchema = z
   .object({
-    program: z.string().min(32),
+    program: z.string().min(1),
     windows: z.object({
       warmupSec: z.number().nonnegative(),
       cooldownSec: z.number().nonnegative(),
@@ -43,8 +44,12 @@ export function parseConfig(raw: string, env: NodeJS.ProcessEnv): BenchConfig {
   const data = parseJsonc(raw, errors, { allowTrailingComma: true });
   if (errors.length) throw new Error(`invalid JSONC config: ${JSON.stringify(errors)}`);
   const parsed = configSchema.parse(data);
+  const program = resolveProgram(parsed.program);
+  if (program.length < 32) {
+    throw new Error(`program must be a known alias or a base58 pubkey (>=32 chars): "${parsed.program}"`);
+  }
   return {
-    program: parsed.program,
+    program,
     windows: parsed.windows,
     endpoints: parsed.endpoints.map((e) => ({
       name: e.name,
