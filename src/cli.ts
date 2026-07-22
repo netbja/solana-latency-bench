@@ -14,6 +14,7 @@ const HELP = `solana-latency-bench
   --cooldown <sec>    override cooldown
   --finalize <ms>     override finalize timeout
   --out <path-prefix> output prefix (default out/report) -> <prefix>.json/.csv
+  --absolute          also report approximate absolute freshness vs block_time (needs config.rpcUrl)
   --help`;
 
 async function main() {
@@ -26,6 +27,7 @@ async function main() {
       cooldown: { type: "string" },
       finalize: { type: "string" },
       out: { type: "string", default: "out/report" },
+      absolute: { type: "boolean", default: false },
       help: { type: "boolean", default: false },
     },
   });
@@ -39,7 +41,7 @@ async function main() {
 
   const durationSec = Number(values.duration);
   console.error(`running ${durationSec}s over ${cfg.endpoints.length} endpoints on ${cfg.program} ...`);
-  const report = await runBench(cfg, { durationSec });
+  const report = await runBench(cfg, { durationSec, absolute: values.absolute });
 
   console.log(formatConsole(report));
   const prefix = values.out!;

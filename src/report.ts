@@ -11,14 +11,20 @@ const CSV_HEAD = [
 ];
 
 export function toCsv(r: Report): string {
-  const rows = r.providers.map((p) =>
-    [
+  // --absolute off (the default) leaves the CSV byte-identical to before: the freshnessMs
+  // column only appears when at least one provider actually carries the metric.
+  const hasFreshness = r.providers.some((p) => p.freshnessMs !== undefined);
+  const head = hasFreshness ? [...CSV_HEAD, "freshnessMs"] : CSV_HEAD;
+  const rows = r.providers.map((p) => {
+    const cols = [
       p.name, p.kind, p.samples, p.wins, p.winRate.toFixed(4),
       p.p50Ms.toFixed(3), p.p95Ms.toFixed(3), p.p99Ms.toFixed(3), p.maxMs.toFixed(3),
       p.missed, p.missedRate.toFixed(4), p.excludedDowntime, p.reconnects, p.pingMisses,
-    ].join(","),
-  );
-  return [CSV_HEAD.join(","), ...rows].join("\n");
+    ];
+    if (hasFreshness) cols.push(p.freshnessMs !== undefined ? p.freshnessMs.toFixed(0) : "");
+    return cols.join(",");
+  });
+  return [head.join(","), ...rows].join("\n");
 }
 
 export function formatConsole(r: Report): string {
@@ -32,6 +38,13 @@ export function formatConsole(r: Report): string {
       p.p50Ms.toFixed(1), p.p95Ms.toFixed(1), p.p99Ms.toFixed(1), p.maxMs.toFixed(1),
       (p.missedRate * 100).toFixed(1), p.excludedDowntime, p.reconnects,
     ].join("\t"));
+  }
+  if (r.providers.some((p) => p.freshnessMs !== undefined)) {
+    lines.push("");
+    lines.push("absolute freshness (median ms, APPROX ±500ms–1s, block_time is second-resolution):");
+    for (const p of r.providers) {
+      if (p.freshnessMs !== undefined) lines.push(`  ${p.name}\t${p.freshnessMs.toFixed(0)}`);
+    }
   }
   return lines.join("\n");
 }

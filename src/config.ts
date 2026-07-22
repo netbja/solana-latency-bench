@@ -20,6 +20,7 @@ const configSchema = z
       finalizeMs: z.number().positive(),
     }),
     endpoints: z.array(endpointSchema).min(1),
+    rpcUrl: z.string().optional(),
   })
   .superRefine((cfg, ctx) => {
     const seen = new Set<string>();
@@ -57,6 +58,7 @@ export function parseConfig(raw: string, env: NodeJS.ProcessEnv): BenchConfig {
       url: interpolate(e.url, env),
       xToken: e.xToken ? interpolate(e.xToken, env) : undefined,
     })),
+    rpcUrl: parsed.rpcUrl ? interpolate(parsed.rpcUrl, env) : undefined,
   };
 }
 

@@ -35,6 +35,7 @@ export interface BenchConfig {
   program: string;
   windows: { warmupSec: number; cooldownSec: number; finalizeMs: number };
   endpoints: EndpointConfig[];
+  rpcUrl?: string;  // JSON-RPC http endpoint for getBlockTime, only needed with --absolute
 }
 
 export interface LatencySource {
@@ -61,6 +62,7 @@ export interface ProviderStats {
   excludedDowntime: number;  // missing while down/reconnect
   reconnects: number;
   pingMisses: number;
+  freshnessMs?: number;  // approximate absolute latency (median), only when --absolute
 }
 
 export interface Report {
