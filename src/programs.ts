@@ -12,6 +12,16 @@ export function resolveProgram(input: string): string {
   return ALIASES[input.toLowerCase()] ?? input;
 }
 
+// Shared by cli.ts and config.ts so both entry points reject a too-short
+// non-alias program the same way instead of silently running on it.
+export function resolveProgramChecked(input: string): string {
+  const resolved = resolveProgram(input);
+  if (resolved.length < 32) {
+    throw new Error(`program must be a known alias or a base58 pubkey (>=32 chars): "${input}"`);
+  }
+  return resolved;
+}
+
 export function programAliases(): string[] {
   return Object.keys(ALIASES);
 }

@@ -61,7 +61,9 @@ export async function runBench(
     src.onSample((s) => matcher.add(s, src.name));
     src.onStatus((st) => stats.addStatus(st));
   }
-  await Promise.all(srcs.map((s) => s.start()));
+  // allSettled: one endpoint failing to start (e.g. an unreachable gRPC target) must not
+  // abort the whole run (design §5) — it is reported with 0 samples instead.
+  await Promise.allSettled(srcs.map((s) => s.start()));
 
   const timer = setInterval(() => {
     for (const m of matcher.finalizeOlderThan(process.hrtime.bigint())) {

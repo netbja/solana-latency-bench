@@ -72,6 +72,17 @@ test("slot-kind match: missing excludes sig-namespace providers, slot propagates
   expect(f.slot).toBe(312345);
 });
 
+test("a duplicate redelivery from an already-recorded provider cannot corrupt firstArr", () => {
+  const mtx = newMatcher();
+  mtx.add(S("dup", 500n, 1500), "A"); // A's first (and only) recorded arrival
+  mtx.add(S("dup", 300n, 1500), "B"); // B truly earliest at 300n
+  mtx.add(S("dup", 50n, 1500), "A");  // redelivery from A, smaller tArr but A already recorded -> ignored
+  const [f] = mtx.flush();
+  const winners = [...f.deltas.entries()].filter(([, d]) => d === 0n);
+  expect(winners).toEqual([["B", 0n]]);
+  expect(f.deltas.get("A")).toBe(200n); // 500n - 300n, unaffected by the 50n redelivery
+});
+
 test("sig/slot key collision maintains separate records via namespace", () => {
   const mtx = newMatcher();
   mtx.add(S("999", 100n, 1500, "sig"), "A");

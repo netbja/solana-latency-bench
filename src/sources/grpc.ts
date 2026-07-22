@@ -33,28 +33,37 @@ export class GrpcSource implements LatencySource {
   }
 
   async start(): Promise<void> {
-    const client = new Client(this.cfg.url, this.cfg.xToken, undefined);
-    const stream = await client.subscribe();
-    this.stream = stream as any;
-    stream.on("data", (update: any) => {
-      const tArr = process.hrtime.bigint(); // FIRST — before decode
-      const tWall = Date.now();
-      const s = extractGrpcSample(update, tArr, tWall);
-      if (s) for (const cb of this.sampleCbs) cb(s);
-    });
-    stream.on("error", () => this.onStreamClosed());
-    stream.on("end", () => this.onStreamClosed());
+    try {
+      const client = new Client(this.cfg.url, this.cfg.xToken, undefined);
+      const stream = await client.subscribe();
+      this.stream = stream as any;
+      stream.on("data", (update: any) => {
+        const tArr = process.hrtime.bigint(); // FIRST — before decode
+        const tWall = Date.now();
+        const s = extractGrpcSample(update, tArr, tWall);
+        if (s) for (const cb of this.sampleCbs) cb(s);
+      });
+      stream.on("error", () => this.onStreamClosed());
+      stream.on("end", () => this.onStreamClosed());
 
-    const req: SubscribeRequest = {
-      accounts: {}, slots: {}, transactionsStatus: {}, blocks: {}, blocksMeta: {}, entry: {}, accountsDataSlice: [],
-      transactions: {
-        pump: { vote: false, failed: false, accountInclude: [this.program], accountExclude: [], accountRequired: [] },
-      },
-      commitment: CommitmentLevel.PROCESSED,
-    } as SubscribeRequest;
+      const req: SubscribeRequest = {
+        accounts: {}, slots: {}, transactionsStatus: {}, blocks: {}, blocksMeta: {}, entry: {}, accountsDataSlice: [],
+        transactions: {
+          pump: { vote: false, failed: false, accountInclude: [this.program], accountExclude: [], accountRequired: [] },
+        },
+        commitment: CommitmentLevel.PROCESSED,
+      } as SubscribeRequest;
 
-    await new Promise<void>((resolve, reject) => stream.write(req, (err: any) => (err ? reject(err) : resolve())));
-    this.emitStatus("up");
+      await new Promise<void>((resolve, reject) => stream.write(req, (err: any) => (err ? reject(err) : resolve())));
+      this.emitStatus("up");
+    } catch {
+      // connect/subscribe/write failed before the stream could fire error/end itself;
+      // fold into the same down+reconnect path instead of rejecting start() (design §5).
+      if (!this.stopped) {
+        this.emitStatus("down");
+        this.reconnect();
+      }
+    }
   }
 
   private onStreamClosed(): void {

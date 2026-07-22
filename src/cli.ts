@@ -4,7 +4,7 @@ import { dirname } from "node:path";
 import { loadConfig } from "./config";
 import { runBench } from "./runner";
 import { formatConsole, toCsv, toJson } from "./report";
-import { resolveProgram, programAliases } from "./programs";
+import { resolveProgramChecked, programAliases } from "./programs";
 
 const HELP = `solana-latency-bench
   --config <path>     config file (default endpoints.jsonc)
@@ -16,6 +16,12 @@ const HELP = `solana-latency-bench
   --out <path-prefix> output prefix (default out/report) -> <prefix>.json/.csv
   --absolute          also report approximate absolute freshness vs block_time (needs config.rpcUrl)
   --help`;
+
+function parseNumFlag(flag: string, raw: string): number {
+  const n = Number(raw);
+  if (Number.isNaN(n)) throw new Error(`--${flag} must be a number`);
+  return n;
+}
 
 async function main() {
   const { values } = parseArgs({
@@ -34,12 +40,12 @@ async function main() {
   if (values.help) { console.log(HELP); return; }
 
   const cfg = loadConfig(values.config!);
-  cfg.program = resolveProgram(values.program ?? cfg.program); // alias or raw pubkey (config value may also be an alias)
-  if (values.warmup) cfg.windows.warmupSec = Number(values.warmup);
-  if (values.cooldown) cfg.windows.cooldownSec = Number(values.cooldown);
-  if (values.finalize) cfg.windows.finalizeMs = Number(values.finalize);
+  cfg.program = resolveProgramChecked(values.program ?? cfg.program); // alias or raw pubkey (config value may also be an alias)
+  if (values.warmup) cfg.windows.warmupSec = parseNumFlag("warmup", values.warmup);
+  if (values.cooldown) cfg.windows.cooldownSec = parseNumFlag("cooldown", values.cooldown);
+  if (values.finalize) cfg.windows.finalizeMs = parseNumFlag("finalize", values.finalize);
 
-  const durationSec = Number(values.duration);
+  const durationSec = parseNumFlag("duration", values.duration!);
   console.error(`running ${durationSec}s over ${cfg.endpoints.length} endpoints on ${cfg.program} ...`);
   const report = await runBench(cfg, { durationSec, absolute: values.absolute });
 

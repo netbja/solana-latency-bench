@@ -40,8 +40,10 @@ export class Matcher {
       rec = { key: sample.key, kind: sample.kind, firstArr: sample.tArr, firstWall: sample.tWall, slot: sample.slot, arrivals: new Map() };
       this.records.set(ik, rec);
     }
-    if (sample.tArr < rec.firstArr) rec.firstArr = sample.tArr;
-    if (!rec.arrivals.has(provider)) rec.arrivals.set(provider, sample.tArr);
+    if (!rec.arrivals.has(provider)) {
+      rec.arrivals.set(provider, sample.tArr);
+      if (sample.tArr < rec.firstArr) rec.firstArr = sample.tArr;
+    }
   }
 
   private finalize(rec: Rec): FinalizedMatch {

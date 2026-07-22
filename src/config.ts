@@ -2,7 +2,7 @@ import { z } from "zod";
 import { parse as parseJsonc, ParseError } from "jsonc-parser";
 import { readFileSync } from "node:fs";
 import type { BenchConfig } from "./types";
-import { resolveProgram } from "./programs";
+import { resolveProgramChecked } from "./programs";
 
 const endpointSchema = z.object({
   name: z.string().min(1),
@@ -45,10 +45,7 @@ export function parseConfig(raw: string, env: NodeJS.ProcessEnv): BenchConfig {
   const data = parseJsonc(raw, errors, { allowTrailingComma: true });
   if (errors.length) throw new Error(`invalid JSONC config: ${JSON.stringify(errors)}`);
   const parsed = configSchema.parse(data);
-  const program = resolveProgram(parsed.program);
-  if (program.length < 32) {
-    throw new Error(`program must be a known alias or a base58 pubkey (>=32 chars): "${parsed.program}"`);
-  }
+  const program = resolveProgramChecked(parsed.program);
   return {
     program,
     windows: parsed.windows,

@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "type": "module",
   "private": true,
+  "engines": { "node": ">=20.18.0" },
   "scripts": {
     "bench": "tsx src/cli.ts",
     "test": "vitest run",
