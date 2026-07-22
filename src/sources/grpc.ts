@@ -18,6 +18,7 @@ export class GrpcSource implements LatencySource {
   private sampleCbs: ((s: Sample) => void)[] = [];
   private statusCbs: ((s: ConnStatus) => void)[] = [];
   private stopped = false;
+  private reconnecting = false;
   private stream?: { end?: () => void };
 
   constructor(private cfg: EndpointConfig, private program: string) {
@@ -41,8 +42,8 @@ export class GrpcSource implements LatencySource {
       const s = extractGrpcSample(update, tArr, tWall);
       if (s) for (const cb of this.sampleCbs) cb(s);
     });
-    stream.on("error", () => { if (!this.stopped) { this.emitStatus("down"); this.reconnect(); } });
-    stream.on("end", () => { if (!this.stopped) { this.emitStatus("down"); this.reconnect(); } });
+    stream.on("error", () => this.onStreamClosed());
+    stream.on("end", () => this.onStreamClosed());
 
     const req: SubscribeRequest = {
       accounts: {}, slots: {}, transactionsStatus: {}, blocks: {}, blocksMeta: {}, entry: {}, accountsDataSlice: [],
@@ -56,9 +57,20 @@ export class GrpcSource implements LatencySource {
     this.emitStatus("up");
   }
 
+  private onStreamClosed(): void {
+    // error and end commonly fire back-to-back for the same disconnect;
+    // reconnect() below is idempotent so this stays safe even if called twice.
+    if (this.stopped) return;
+    this.emitStatus("down");
+    this.reconnect();
+  }
+
   private reconnect(): void {
+    if (this.stopped || this.reconnecting) return;
+    this.reconnecting = true;
     setTimeout(() => {
-      if (this.stopped) return;
+      if (this.stopped) { this.reconnecting = false; return; }
+      this.reconnecting = false; // clear before start() so a future disconnect can reconnect
       this.emitStatus("reconnect");
       this.start().catch(() => { /* next error triggers another reconnect */ });
     }, 1000);
