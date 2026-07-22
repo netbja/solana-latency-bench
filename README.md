@@ -42,3 +42,7 @@ provider latency for different on-chain apps.
 - Free peers to try against Helius Free: the public `wss://api.mainnet-beta.solana.com` (rate-limited),
   or a second free provider key. Two free `ws-logs` endpoints already give a useful comparison.
 - Live runs are validated manually (real endpoints); the pure Matcher/StatsEngine carry the test suite.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
