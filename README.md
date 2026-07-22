@@ -7,15 +7,20 @@ each delivers the same transaction. Relative ranking — no block-time bias.
 
 ```bash
 npm install
-cp endpoints.jsonc endpoints.local.jsonc   # edit; add real endpoints
-export HELIUS_API_KEY=...                   # secrets via env
-npm run bench -- --config endpoints.local.jsonc --duration 120
+npm link                                    # once — exposes the `slb` command
+cp endpoints.jsonc endpoints.local.jsonc    # edit; add real endpoints
+export HELIUS_API_KEY=...                    # secrets via env
+
+slb --config endpoints.local.jsonc --duration 120
 
 # switch the app under test by alias (or pass a raw program pubkey):
-npm run bench -- --config endpoints.local.jsonc --program pumpswap --duration 120
+slb --config endpoints.local.jsonc --program pumpswap --duration 120
 ```
 
 Outputs a console table plus `out/report.json` / `out/report.csv`.
+
+Without linking, the same works via `npm run bench -- <args>` (the `--` forwards args past npm) or
+`npx tsx src/cli.ts <args>`. `slb` and `solana-latency-bench` are aliases for the same command.
 
 `--program` accepts an **alias** (`pump.fun`, `pumpswap`, `raydium-amm`, `raydium-clmm`) or any raw
 program pubkey. The config `program` field accepts aliases too. This makes it easy to benchmark
