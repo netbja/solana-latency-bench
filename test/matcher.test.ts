@@ -2,7 +2,7 @@ import { expect, test } from "vitest";
 import { Matcher } from "../src/matcher";
 import type { Sample } from "../src/types";
 
-const S = (key: string, tArr: bigint, tWall: number, kind: "sig" | "slot" = "sig"): Sample => ({ key, kind, tArr, tWall });
+const S = (key: string, tArr: bigint, tWall: number, kind: "sig" | "slot" = "sig", slot?: number): Sample => ({ key, kind, tArr, tWall, slot });
 
 function newMatcher() {
   return new Matcher({
@@ -60,4 +60,28 @@ test("later smaller tArr lowers firstArr; deltas recomputed at finalize", () => 
   const [f] = mtx.flush();
   expect(f.deltas.get("B")).toBe(0n);
   expect(f.deltas.get("A")).toBe(400n);
+});
+
+test("slot-kind match: missing excludes sig-namespace providers, slot propagates", () => {
+  const mtx = newMatcher();
+  mtx.add(S("312345", 100n, 1500n, "slot", 312345), "C");
+  const [f] = mtx.flush();
+  expect(f.kind).toBe("slot");
+  expect(f.deltas.get("C")).toBe(0n);
+  expect(f.missing).toEqual([]);
+  expect(f.slot).toBe(312345);
+});
+
+test("sig/slot key collision maintains separate records via namespace", () => {
+  const mtx = newMatcher();
+  mtx.add(S("999", 100n, 1500n, "sig"), "A");
+  mtx.add(S("999", 100n, 1500n, "slot"), "C");
+  const matches = mtx.flush();
+  expect(matches).toHaveLength(2);
+
+  const sigMatch = matches.find((m) => m.kind === "sig");
+  const slotMatch = matches.find((m) => m.kind === "slot");
+
+  expect(sigMatch?.missing).toEqual(["B"]);
+  expect(slotMatch?.missing).toEqual([]);
 });
